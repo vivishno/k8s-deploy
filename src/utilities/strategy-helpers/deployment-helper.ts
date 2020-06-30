@@ -114,8 +114,9 @@ async function checkManifestStability(kubectl: Kubectl, resources: Resource[]): 
 
 function annotateResources(files: string[], kubectl: Kubectl, resourceTypes: Resource[], allPods: any) {
     const annotateResults: IExecSyncResult[] = [];
+    let annotationKeyValStr = models.resourceViewAnnotationsKey + '[' + models.workflowAnnotationsJson + ']';
     annotateResults.push(annotateNamespace(kubectl, TaskInputParameters.namespace));
-    annotateResults.push(kubectl.annotateFiles(files, models.workflowAnnotations, true));
+    annotateResults.push(kubectl.annotateFiles(files, [annotationKeyValStr], true));
     resourceTypes.forEach(resource => {
         if (resource.type.toUpperCase() !== models.KubernetesWorkload.pod.toUpperCase()) {
             annotateChildPods(kubectl, resource.type, resource.name, allPods)

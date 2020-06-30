@@ -37,3 +37,18 @@ export const workflowAnnotations = [
     `deployTimestamp=${Date.now()}`,
     `provider=GitHub`
 ];
+
+export const resourceViewAnnotationsKey = `resourceAnnotations=`;
+export const workflowAnnotationsJson =
+    `{`
+        +`'run': '${process.env['GITHUB_RUN_ID']}',`
+        +`'repository': '${process.env['GITHUB_REPOSITORY']}',`
+        +`'workflow': '${process.env['GITHUB_WORKFLOW']}',`
+        +`'jobName': '${process.env['GITHUB_JOB']}',`
+        +`'createdBy': '${process.env['GITHUB_ACTOR']}',`
+        +`'runUri': 'https://github.com/${process.env['GITHUB_REPOSITORY']}/actions/runs/${process.env['GITHUB_RUN_ID']}',`
+        +`'commit': '${process.env['GITHUB_SHA']}',`
+        +`'branch': '${process.env['GITHUB_REF']}',`
+        +`'deployTimestamp': '${Date.now()}',`
+        +`'provider': 'GitHub'`
+    +`}`;

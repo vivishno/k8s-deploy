@@ -2,7 +2,7 @@ import * as os from 'os';
 import * as core from '@actions/core';
 import { IExecSyncResult } from './tool-runner';
 import { Kubectl } from '../kubectl-object-model';
-import { workflowAnnotations } from '../constants';
+import * as constants from '../constants';
 
 export function getExecutableExtension(): string {
     if (os.type().match(/^Win/)) {
@@ -52,6 +52,7 @@ export function checkForErrors(execResults: IExecSyncResult[], warnIfError?: boo
 
 export function annotateChildPods(kubectl: Kubectl, resourceType: string, resourceName: string, allPods): IExecSyncResult[] {
     const commandExecutionResults = [];
+    let annotationKeyValStr = constants.resourceViewAnnotationsKey + '[' + constants.workflowAnnotationsJson + ']';
     let owner = resourceName;
     if (resourceType.toLowerCase().indexOf('deployment') > -1) {
         owner = kubectl.getNewReplicaSet(resourceName);
@@ -63,7 +64,7 @@ export function annotateChildPods(kubectl: Kubectl, resourceType: string, resour
             if (!!owners) {
                 owners.forEach(ownerRef => {
                     if (ownerRef.name === owner) {
-                        commandExecutionResults.push(kubectl.annotate('pod', pod.metadata.name, workflowAnnotations, true));
+                        commandExecutionResults.push(kubectl.annotate('pod', pod.metadata.name, [annotationKeyValStr], true));
                     }
                 });
             }
@@ -74,16 +75,39 @@ export function annotateChildPods(kubectl: Kubectl, resourceType: string, resour
 }
 
 export function annotateNamespace(kubectl: Kubectl, namespaceName: string): IExecSyncResult {
-    let annotate = true;
     const result = kubectl.getResource('namespace', namespaceName);
-    this.checkForErrors([result]);
-    const annotationsSet = JSON.parse(result.stdout).metadata.annotations;
-    if (!!annotationsSet && !!annotationsSet.runUri && annotationsSet.runUri.indexOf(process.env['GITHUB_REPOSITORY']) == -1) {
-        annotate = false;
-        core.debug(`Skipping 'annotate namespace' as namespace annotated by other workflow`);
+    if (!result) {
+        return { code: -1, stderr: 'Failed to get resource' } as IExecSyncResult;
     }
-    if (annotate) {
-        return kubectl.annotate('namespace', namespaceName, workflowAnnotations, true);
+    else if (!!result && !!result.stderr) {
+        return result;
+    }
+
+    if (!!result && !!result.stdout) {
+        const annotationsSet = JSON.parse(result.stdout).metadata.annotations;
+        let annotationKeyValStr = constants.resourceViewAnnotationsKey + '[' + constants.workflowAnnotationsJson + ']';
+        if (!!annotationsSet && !!annotationsSet.resourceAnnotations) {
+            try {
+                if (annotationsSet.resourceAnnotations.startsWith('[')) {
+                    let annotationsArr = JSON.parse(annotationsSet.resourceAnnotations.replace(/'/g, '"'));
+                    let arrIdx = annotationsArr.findIndex(e => e.repository === process.env['GITHUB_REPOSITORY'] && e.workflow === process.env['GITHUB_WORKFLOW']);
+                    if (arrIdx > -1) {
+                        annotationsArr.splice(arrIdx, 1);
+                    }
+                    let annotationsArrStr = JSON.stringify(annotationsArr).replace(/"/g, '\'');
+                    if (annotationsArrStr.startsWith('[')) {
+                        annotationsArrStr = [annotationsArrStr.slice(0, 1), constants.workflowAnnotationsJson + ',', annotationsArrStr.slice(1)].join('');
+                    }
+                    annotationKeyValStr = constants.resourceViewAnnotationsKey + annotationsArrStr;
+                    return kubectl.annotate('namespace', namespaceName, [annotationKeyValStr], true);
+                }
+            } catch (e) {
+                core.debug("Unable to process resource annotations ; Error: " + e);
+                return { code: -1, stderr: 'Failed to process namespace annotattions' } as IExecSyncResult;
+            }
+        }
+
+        return kubectl.annotate('namespace', namespaceName, [annotationKeyValStr], true);
     }
 }
 
