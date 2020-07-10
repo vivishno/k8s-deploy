@@ -21,7 +21,7 @@ export function isEqual(str1: string, str2: string, ignoreCase?: boolean): boole
         return false;
     }
 
-    if (ignoreCase) {
+    if (!!ignoreCase) {
         return str1.toUpperCase() === str2.toUpperCase();
     } else {
         return str1 === str2;
@@ -32,7 +32,7 @@ export function checkForErrors(execResults: IExecSyncResult[], warnIfError?: boo
     if (execResults.length !== 0) {
         let stderr = '';
         execResults.forEach(result => {
-            if (result.stderr) {
+            if (!!result && !!result.stderr) {
                 if (result.code !== 0) {
                     stderr += result.stderr + '\n';
                 } else {
@@ -106,7 +106,6 @@ export function annotateNamespace(kubectl: Kubectl, namespaceName: string): IExe
                 return { code: -1, stderr: 'Failed to process namespace annotattions' } as IExecSyncResult;
             }
         }
-
         return kubectl.annotate('namespace', namespaceName, [annotationKeyValStr], true);
     }
 }

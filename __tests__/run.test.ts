@@ -8,7 +8,6 @@ import * as io from '@actions/io';
 import * as toolCache from '@actions/tool-cache';
 import * as fileHelper from '../src/utilities/files-helper';
 import { resourceViewAnnotationsKey, workflowAnnotationsJson } from '../src/constants';
-import * as utility from '../src/utilities/utility';
 import * as inputParam from '../src/input-parameters';
 
 import { Kubectl, Resource } from '../src/kubectl-object-model';
@@ -21,7 +20,6 @@ const os = require("os");
 
 const coreMock = mocked(core, true);
 const ioMock = mocked(io, true);
-const utilityMock = mocked(utility, true);
 const inputParamMock = mocked(inputParam, true);
 
 const toolCacheMock = mocked(toolCache, true);
@@ -43,7 +41,7 @@ const getNamespaceMock = {
 
 const resources: Resource[] = [{ type: "Deployment", name: "AppName" }];
 
-beforeAll(() => {
+beforeEach(() => {
     deploymentYaml = fs.readFileSync(path.join(__dirname, 'manifests', 'deployment.yml'), 'utf8');
 
     process.env["KUBECONFIG"] = 'kubeConfig';
