@@ -7,10 +7,11 @@ import * as fs from 'fs';
 import * as io from '@actions/io';
 import * as toolCache from '@actions/tool-cache';
 import * as fileHelper from '../src/utilities/files-helper';
-import { resourceViewAnnotationsKey, workflowAnnotationsJson } from '../src/constants';
+import { resourceViewAnnotationsKey, getWorkflowAnnotationsJson } from '../src/constants';
 import * as inputParam from '../src/input-parameters';
 
 import { Kubectl, Resource } from '../src/kubectl-object-model';
+import { GitHubClient } from '../src/githubClient'
 
 import { getkubectlDownloadURL } from "../src/utilities/kubectl-util";
 import { mocked } from 'ts-jest/utils';
@@ -52,6 +53,7 @@ beforeEach(() => {
     process.env['GITHUB_REPOSITORY'] = 'testRepo';
     process.env['GITHUB_SHA'] = 'testCommit';
     process.env['GITHUB_REF'] = 'testBranch';
+    process.env['GITHUB_TOKEN'] = 'testToken';
 })
 
 test("setKubectlPath() - install a particular version", async () => {
@@ -213,6 +215,7 @@ test("deployment - deploy() - Invokes with manifestfiles", async () => {
     kubeCtl.describe = jest.fn().mockReturnValue("");
     kubeCtl.annotateFiles = jest.fn().mockReturnValue("");
     kubeCtl.annotate = jest.fn().mockReturnValue("");
+    kubeCtl.labelResource = jest.fn().mockReturnValue("");
     KubernetesManifestUtilityMock.checkManifestStability = jest.fn().mockReturnValue("");
 
     const readFileSpy = jest.spyOn(fs, 'readFileSync').mockImplementation(() => deploymentYaml);
@@ -241,6 +244,7 @@ test("deployment - deploy() - deploy force flag on", async () => {
     kubeCtl.describe = jest.fn().mockReturnValue("");
     kubeCtl.annotateFiles = jest.fn().mockReturnValue("");
     kubeCtl.annotate = jest.fn().mockReturnValue("");
+    kubeCtl.labelResource = jest.fn().mockReturnValue("");
     KubernetesManifestUtilityMock.checkManifestStability = jest.fn().mockReturnValue("");
 
     const deploySpy = jest.spyOn(kubeCtl, 'apply').mockImplementation(() => applyResMock);
@@ -252,13 +256,14 @@ test("deployment - deploy() - deploy force flag on", async () => {
 });
 
 test("deployment - deploy() - Annotate resources", async () => {
-    let annotationKeyValStr = resourceViewAnnotationsKey + '[' + workflowAnnotationsJson + ']';
+    let annotationKeyValStr = resourceViewAnnotationsKey + '[' + getWorkflowAnnotationsJson('lastSuccessSha') + ']';
     const KubernetesManifestUtilityMock = mocked(KubernetesManifestUtility, true);
     KubernetesManifestUtilityMock.checkManifestStability = jest.fn().mockReturnValue("");
     const KubernetesObjectUtilityMock = mocked(KubernetesObjectUtility, true);
     KubernetesObjectUtilityMock.getResources = jest.fn().mockReturnValue(resources);
     const fileHelperMock = mocked(fileHelper, true);
     fileHelperMock.writeObjectsToFile = jest.fn().mockReturnValue(["~/Deployment_testapp_currentTimestamp"]);
+
     const kubeCtl: jest.Mocked<Kubectl> = new Kubectl("") as any;
     kubeCtl.apply = jest.fn().mockReturnValue("");
     kubeCtl.getResource = jest.fn().mockReturnValue(getNamespaceMock);
@@ -266,6 +271,7 @@ test("deployment - deploy() - Annotate resources", async () => {
     kubeCtl.getNewReplicaSet = jest.fn().mockReturnValue("testpod-776cbc86f9");
     kubeCtl.annotateFiles = jest.fn().mockReturnValue("");
     kubeCtl.annotate = jest.fn().mockReturnValue("");
+    kubeCtl.labelResource = jest.fn().mockReturnValue("");
 
     //Invoke and assert
     await expect(deployment.deploy(kubeCtl, ['manifests/deployment.yaml'], undefined)).resolves.not.toThrowError();
@@ -275,7 +281,7 @@ test("deployment - deploy() - Annotate resources", async () => {
 
 test("deployment - deploy() - Skip Annotate namespace", async () => {
     process.env['GITHUB_REPOSITORY'] = 'testUser/test1Repo';
-    let annotationKeyValStr = resourceViewAnnotationsKey + '[' + workflowAnnotationsJson + ']';
+    let annotationKeyValStr = resourceViewAnnotationsKey + '[' + getWorkflowAnnotationsJson('lastSuccessSha') + ']';
     const KubernetesManifestUtilityMock = mocked(KubernetesManifestUtility, true);
     KubernetesManifestUtilityMock.checkManifestStability = jest.fn().mockReturnValue("");
     const KubernetesObjectUtilityMock = mocked(KubernetesObjectUtility, true);
@@ -289,6 +295,7 @@ test("deployment - deploy() - Skip Annotate namespace", async () => {
     kubeCtl.getNewReplicaSet = jest.fn().mockReturnValue("testpod-776cbc86f9");
     kubeCtl.annotateFiles = jest.fn().mockReturnValue("");
     kubeCtl.annotate = jest.fn().mockReturnValue("");
+    kubeCtl.labelResource = jest.fn().mockReturnValue("");
 
     const consoleOutputSpy = jest.spyOn(process.stdout, "write").mockImplementation();
 
@@ -318,10 +325,11 @@ test("deployment - deploy() - Annotate resources failed", async () => {
     kubeCtl.describe = jest.fn().mockReturnValue("");
     kubeCtl.annotateFiles = jest.fn().mockReturnValue("");
     kubeCtl.annotate = jest.fn().mockReturnValue(annotateMock);
+    kubeCtl.labelResource = jest.fn().mockReturnValue("");
     KubernetesManifestUtilityMock.checkManifestStability = jest.fn().mockReturnValue("");
 
     const consoleOutputSpy = jest.spyOn(process.stdout, "write").mockImplementation();
     //Invoke and assert
     await expect(deployment.deploy(kubeCtl, ['manifests/deployment.yaml'], undefined)).resolves.not.toThrowError();
-    expect(consoleOutputSpy).toHaveBeenNthCalledWith(2, '##[warning]kubectl annotate failed' + os.EOL)
+    expect(consoleOutputSpy).toHaveBeenNthCalledWith(4, '##[warning]kubectl annotate failed' + os.EOL)
 });

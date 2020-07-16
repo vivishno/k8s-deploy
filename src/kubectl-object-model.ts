@@ -65,6 +65,12 @@ export class Kubectl {
         return this.execute(args);
     }
 
+    public labelResource(resourceType: string, name: string, label: string, overwrite?: boolean): IExecSyncResult {
+        let args = ['label', resourceType, name, label];
+        if (!!overwrite) { args.push(`--overwrite`); }
+        return this.execute(args);
+    }
+
     public getAllPods(): IExecSyncResult {
         return this.execute(['get', 'pods', '-o', 'json'], true);
     }
