@@ -131,7 +131,7 @@ async function annotateResources(files: string[], kubectl: Kubectl, resourceType
 
 function labelResources(kubectl: Kubectl) {
     const labelResults: IExecSyncResult[] = [];
-    const workflowLabel = `workflow=${process.env['GITHUB_WORKFLOW']}`;
+    const workflowLabel = `workflow=${Buffer.from(process.env['GITHUB_WORKFLOW']).toString('base64')}`;
     labelResults.push(kubectl.labelResource('namespaces', TaskInputParameters.namespace, workflowLabel, true));
     utility.checkForErrors(labelResults, true);
 }
