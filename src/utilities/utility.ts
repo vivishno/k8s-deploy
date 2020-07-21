@@ -55,8 +55,8 @@ export function checkForErrors(execResults: IExecSyncResult[], warnIfError?: boo
 export async function getLastSuccessfulRunSha(githubToken: string): Promise<string> {
     let lastSuccessRunSha = '';
     const gitHubClient = new GitHubClient(process.env.GITHUB_REPOSITORY, githubToken);
-    const branchTokens = process.env.GITHUB_REF.split('/');
-    const response = await gitHubClient.getSuccessfulRunsOnBranch(branchTokens[branchTokens.length-1]);
+    const branch = process.env.GITHUB_REF.replace("refs/heads/", "");
+    const response = await gitHubClient.getSuccessfulRunsOnBranch(branch);
     if (response.statusCode == StatusCodes.OK
         && response.body
         && response.body.total_count) {
@@ -95,7 +95,7 @@ export function annotateChildPods(kubectl: Kubectl, resourceType: string, resour
     return commandExecutionResults;
 }
 
-export function annotateNamespace(kubectl: Kubectl, namespaceName: string, workflowAnnotationsJson: string): IExecSyncResult {
+/*export function annotateNamespace(kubectl: Kubectl, namespaceName: string, workflowAnnotationsJson: string): IExecSyncResult {
     const result = kubectl.getResource('namespace', namespaceName);
     if (!result) {
         return { code: -1, stderr: 'Failed to get resource' } as IExecSyncResult;
@@ -133,7 +133,7 @@ export function annotateNamespace(kubectl: Kubectl, namespaceName: string, workf
         }
         return kubectl.annotate('namespace', namespaceName, [annotationKeyValStr], true);
     }
-}
+}*/
 
 export function sleep(timeout: number) {
     return new Promise(resolve => setTimeout(resolve, timeout));

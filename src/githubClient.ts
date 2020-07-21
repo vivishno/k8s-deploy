@@ -17,7 +17,6 @@ export class GitHubClient {
                 Authorization: `Bearer ${this._token}`
             };
 
-            core.debug(`KAI token:${this._token} env:${process.env.GITHUB_TOKEN}`);
             core.debug(`Getting last successful run for repo: ${this._repository} on branch: ${branch}`);
             const response: WebResponse = await sendRequest(webRequest);
             this._successfulRunsOnBranchPromise = Promise.resolve(response);
