@@ -8,7 +8,7 @@ If you are looking to automate your workflows to deploy to [Azure Web Apps](http
 
 ## Action capabilities
 
-Following are the key capabilities of this action:
+Following are the key capabilities of this action:s
 
 - **Artifact substitution**: The deploy action takes as input a list of container images which can be specified along with their tags or digests. The same is substituted into the non-templatized version of manifest files before applying to the cluster to ensure that the right version of the image is pulled by the cluster nodes.
 
